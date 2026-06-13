@@ -79,7 +79,7 @@ body {
     padding: 12px 20px; background: rgba(0,0,0,0.6);
     color: #fff; z-index: 50; pointer-events: none;
 }
-.hud-left, .hud-right { font-size: 18px; font-weight: bold; min-width: 120px; }
+.hud-left, .hud-right { font-size: 18px; font-weight: bold; width: 130px; flex-shrink: 0; }
 .hud-right { text-align: right; }
 .hud-center { flex: 1; margin: 0 20px; }
 
@@ -120,7 +120,7 @@ body {
     .hint { font-size: 12px; margin-top: 14px; }
 
     #hud { padding: 8px 12px; }
-    .hud-left, .hud-right { font-size: 14px; min-width: 80px; }
+    .hud-left, .hud-right { font-size: 14px; width: 90px; flex-shrink: 0; }
     .hud-center { margin: 0 10px; }
     .progress-bar { height: 18px; }
     .progress-fill { line-height: 18px; font-size: 10px; }
@@ -135,7 +135,7 @@ body {
     .subtitle { font-size: 12px; }
     .btn { padding: 10px 16px; font-size: 13px; }
     #speedSlider { width: 110px; }
-    .hud-left, .hud-right { font-size: 12px; min-width: 60px; }
+    .hud-left, .hud-right { font-size: 12px; width: 70px; flex-shrink: 0; }
     .result-box h2 { font-size: 22px; }
 }
 
@@ -173,7 +173,7 @@ body {
     .hint { font-size: 10px; margin-top: 8px; }
 
     #hud { padding: 4px 10px; }
-    .hud-left, .hud-right { font-size: 12px; min-width: 60px; }
+    .hud-left, .hud-right { font-size: 12px; width: 70px; flex-shrink: 0; }
     .hud-center { margin: 0 8px; }
     .progress-bar { height: 14px; border-radius: 7px; }
     .progress-fill { line-height: 14px; font-size: 9px; border-radius: 7px; }
@@ -193,7 +193,7 @@ body {
     #speedSlider { width: 100px; }
     .hint { font-size: 9px; margin-top: 4px; }
     #hud { padding: 2px 8px; }
-    .hud-left, .hud-right { font-size: 10px; min-width: 50px; }
+    .hud-left, .hud-right { font-size: 10px; width: 60px; flex-shrink: 0; }
     .progress-bar { height: 12px; }
     .progress-fill { line-height: 12px; font-size: 8px; }
 }
@@ -715,9 +715,22 @@ function startGame(size) {
     canvas.style.display = "block";
     resizeCanvas();
     lastTime = performance.now();
-    // 移动端强制横屏
-    if (isMobile && screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(function() {});
+    // 移动端强制横屏：先请求全屏，再锁定方向
+    if (isMobile) {
+        var el = document.documentElement;
+        var doLock = function() {
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(function() {});
+            }
+        };
+        if (el.requestFullscreen) {
+            el.requestFullscreen().then(doLock).catch(doLock);
+        } else if (el.webkitRequestFullscreen) {
+            el.webkitRequestFullscreen();
+            setTimeout(doLock, 300);
+        } else {
+            doLock();
+        }
     }
 }
 
