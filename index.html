@@ -1,0 +1,804 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a2e">
+<title>球球大作战 · 单机版</title>
+<style>
+﻿* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: #1a1a2e;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+}
+
+#gameCanvas { display: block; }
+
+/* ===== 菜单 ===== */
+#menu {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    z-index: 100;
+}
+.menu-box { text-align: center; color: #fff; }
+.title { font-size: 48px; margin-bottom: 4px; text-shadow: 0 0 20px rgba(255,71,87,0.5); }
+.subtitle { font-size: 18px; color: #aaa; margin-bottom: 30px; }
+
+.difficulty p { font-size: 16px; margin-bottom: 12px; color: #ccc; }
+.difficulty { margin-bottom: 20px; }
+
+.btn {
+    border: none; border-radius: 12px; padding: 14px 28px; margin: 6px;
+    font-size: 16px; cursor: pointer; color: #fff;
+    transition: transform 0.15s, box-shadow 0.15s;
+    min-width: 100px;
+}
+.btn:hover { transform: scale(1.05); }
+.btn:active { transform: scale(0.97); }
+.btn small { font-size: 12px; opacity: 0.85; }
+
+.btn-easy { background: linear-gradient(135deg, #2ed573, #7bed9f); }
+.btn-normal { background: linear-gradient(135deg, #ffa502, #ff6348); }
+.btn-custom { background: linear-gradient(135deg, #a29bfe, #6c5ce7); }.btn-hard { background: linear-gradient(135deg, #ff4757, #ff6b81); }
+.btn-restart { background: linear-gradient(135deg, #3742fa, #5352ed); margin-top: 24px; }
+
+/* 速度滑块 */
+.slider-wrap {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin-top: 8px;
+}
+.slider-end { color: #aaa; font-size: 13px; }
+#speedSlider {
+    -webkit-appearance: none; appearance: none;
+    width: 200px; height: 8px;
+    background: rgba(255,255,255,0.15); border-radius: 4px;
+    outline: none; cursor: pointer;
+}
+#speedSlider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: linear-gradient(135deg, #70a1ff, #1e90ff);
+    box-shadow: 0 0 8px rgba(30,144,255,0.5); cursor: pointer;
+}
+#speedLabel { color: #70a1ff; font-weight: bold; font-size: 20px; }
+
+.hint { margin-top: 20px; color: #666; font-size: 14px; }
+
+/* ===== HUD ===== */
+#hud {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; background: rgba(0,0,0,0.6);
+    color: #fff; z-index: 50; pointer-events: none;
+}
+.hud-left, .hud-right { font-size: 18px; font-weight: bold; min-width: 120px; }
+.hud-right { text-align: right; }
+.hud-center { flex: 1; margin: 0 20px; }
+
+.progress-bar {
+    width: 100%; height: 22px; background: rgba(255,255,255,0.2);
+    border-radius: 11px; overflow: hidden;
+}
+.progress-fill {
+    height: 100%; background: linear-gradient(90deg, #ffa502, #ff4757);
+    border-radius: 11px; text-align: center; line-height: 22px;
+    font-size: 12px; font-weight: bold; transition: width 0.3s;
+}
+
+/* ===== 结算 ===== */
+#result {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.75); z-index: 200;
+}
+.result-box {
+    text-align: center; color: #fff; padding: 48px;
+    background: rgba(26,26,46,0.95); border-radius: 20px;
+    border: 2px solid rgba(255,255,255,0.1);
+}
+.result-box h2 { font-size: 36px; margin-bottom: 16px; }
+.result-box p { font-size: 18px; color: #ccc; line-height: 2; }
+
+
+/* ===== 移动端适配 ===== */
+@media (max-width: 768px) {
+    .title { font-size: 32px; }
+    .subtitle { font-size: 14px; margin-bottom: 20px; }
+    .difficulty p { font-size: 14px; }
+    .btn { padding: 12px 20px; font-size: 14px; min-width: 80px; }
+    .menu-box { padding: 0 16px; }
+    #speedSlider { width: 140px; }
+    #speedLabel { font-size: 16px; }
+    .hint { font-size: 12px; margin-top: 14px; }
+
+    #hud { padding: 8px 12px; }
+    .hud-left, .hud-right { font-size: 14px; min-width: 80px; }
+    .hud-center { margin: 0 10px; }
+    .progress-bar { height: 18px; }
+    .progress-fill { line-height: 18px; font-size: 10px; }
+
+    .result-box { padding: 32px 24px; margin: 0 16px; }
+    .result-box h2 { font-size: 26px; }
+    .result-box p { font-size: 15px; }
+}
+
+@media (max-width: 400px) {
+    .title { font-size: 26px; }
+    .subtitle { font-size: 12px; }
+    .btn { padding: 10px 16px; font-size: 13px; }
+    #speedSlider { width: 110px; }
+    .hud-left, .hud-right { font-size: 12px; min-width: 60px; }
+    .result-box h2 { font-size: 22px; }
+}
+
+
+/* ===== 横屏提示 ===== */
+#rotateHint { display: none !important; }
+@media (orientation: portrait) {
+    #rotateHint { display: flex !important; }
+    #menu, #hud, #result, #gameCanvas { display: none !important; }
+}
+@media (orientation: landscape) {
+    #rotateHint { display: none !important; }
+}
+
+
+/* ===== 横屏高度适配 ===== */
+@media (max-height: 500px) {
+    #menu {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        align-items: flex-start;
+        padding: 10px 0;
+    }
+    .menu-box { padding: 0 20px; }
+    .title { font-size: 22px; margin-bottom: 2px; }
+    .subtitle { font-size: 12px; margin-bottom: 10px; }
+    .difficulty { margin-bottom: 8px; }
+    .difficulty p { font-size: 12px; margin-bottom: 4px; }
+    .btn { padding: 8px 16px; font-size: 13px; min-width: 70px; margin: 3px; }
+    #speedSlider { width: 120px; height: 6px; }
+    #speedSlider::-webkit-slider-thumb { width: 18px; height: 18px; }
+    #speedLabel { font-size: 14px; }
+    .slider-wrap { gap: 6px; margin-top: 4px; }
+    .slider-end { font-size: 11px; }
+    .hint { font-size: 10px; margin-top: 8px; }
+
+    #hud { padding: 4px 10px; }
+    .hud-left, .hud-right { font-size: 12px; min-width: 60px; }
+    .hud-center { margin: 0 8px; }
+    .progress-bar { height: 14px; border-radius: 7px; }
+    .progress-fill { line-height: 14px; font-size: 9px; border-radius: 7px; }
+
+    .result-box { padding: 20px 24px; }
+    .result-box h2 { font-size: 22px; margin-bottom: 10px; }
+    .result-box p { font-size: 14px; line-height: 1.6; }
+    .btn-restart { margin-top: 14px; padding: 10px 20px; font-size: 14px; }
+}
+
+@media (max-height: 350px) {
+    .title { font-size: 18px; }
+    .subtitle { font-size: 10px; margin-bottom: 6px; }
+    .difficulty { margin-bottom: 5px; }
+    .difficulty p { font-size: 11px; margin-bottom: 2px; }
+    .btn { padding: 6px 12px; font-size: 11px; }
+    #speedSlider { width: 100px; }
+    .hint { font-size: 9px; margin-top: 4px; }
+    #hud { padding: 2px 8px; }
+    .hud-left, .hud-right { font-size: 10px; min-width: 50px; }
+    .progress-bar { height: 12px; }
+    .progress-fill { line-height: 12px; font-size: 8px; }
+}
+
+</style>
+<style>
+    html, body { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+    canvas { touch-action: none; }
+
+</style>
+</head>
+<body>
+<div id="rotateHint" style="display:none;position:fixed;inset:0;z-index:999;background:#1a1a2e;display:none;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-size:20px;text-align:center;">
+    <div style="font-size:60px;margin-bottom:20px;">📱</div>
+    <div>请旋转手机至横屏</div>
+    <div style="font-size:14px;color:#aaa;margin-top:8px;">以获得最佳游戏体验</div>
+</div>
+<canvas id="gameCanvas" style="display:none"></canvas>
+<div id="menu">
+    <div class="menu-box">
+        <h1 class="title">⚪ 球球大作战</h1>
+        <p class="subtitle">单机版</p>
+        <div class="difficulty">
+            <p>目标大小：<span id="targetLabel" style="color:#ffa502;font-weight:bold;">150</span></p>
+            <div class="slider-wrap">
+                <span class="slider-end">50</span>
+                <input type="range" id="targetSlider" min="50" max="1000" value="150" step="10" oninput="document.getElementById('targetLabel').textContent=this.value">
+                <span class="slider-end">1000</span>
+            </div>
+            <div style="margin-top:8px;">
+                <button onclick="startGame(parseInt(document.getElementById('targetSlider').value))" class="btn btn-custom">自定义<br><small>自定</small></button>
+            </div>
+        </div>
+        <div class="difficulty">
+            <p>初始速度：<span id="speedLabel">4.5</span></p>
+            <div class="slider-wrap">
+                <span class="slider-end">0</span>
+                <input type="range" id="speedSlider" min="0" max="6.5" value="4.5" step="0.1" oninput="updateSpeedLabel()">
+                <span class="slider-end">6.5</span>
+            </div>
+        </div>
+        <div class="difficulty">
+            <p>AI 数量：<span id="aiLabel">5</span></p>
+            <div class="slider-wrap">
+                <span class="slider-end">0</span>
+                <input type="range" id="aiSlider" min="0" max="20" value="5" step="1" oninput="updateAiLabel()">
+                <span class="slider-end">20</span>
+            </div>
+        </div>
+        <p class="hint">WASD / 方向键 移动 | 球越大越慢 | 有惯性</p>
+    </div>
+</div>
+<div id="hud" style="display:none">
+    <div class="hud-left"><span id="sizeText">0 / 0</span></div>
+    <div class="hud-center"><div class="progress-bar"><div id="progressFill" class="progress-fill" style="width:0%">0%</div></div></div>
+    <div class="hud-right"><span id="rankText">第 ? 名</span><br><small><span id="velText" style="font-size:12px;color:#aaa;">速度 0.0</span></small></div>
+</div>
+<div id="result" style="display:none">
+    <div class="result-box">
+        <h2 id="resultTitle"></h2>
+        <p id="resultInfo"></p>
+        <button onclick="restartGame()" class="btn btn-restart">再来一局</button>
+    </div>
+</div>
+<script>
+﻿// 球球大作战 · 单机版
+var canvas = document.getElementById("gameCanvas");
+var ctx = canvas.getContext("2d");
+
+var STATE = { MENU: 0, PLAYING: 1, WON: 2, LOST: 3 };
+var state = STATE.MENU;
+var targetSize = 150;
+var playerSpeed = 4.5;
+var startTime = 0;
+var gameTime = 0;
+
+var WORLD_W = 4000;
+var WORLD_H = 4000;
+var AI_COUNT = 5;
+var FOOD_RADIUS = 6;
+
+var player = null;
+var foods = [];
+var ais = [];
+var zoom = 1.0;
+
+var velX = 0;
+var velY = 0;
+var FRICTION = 0.92;
+var ACCEL = 0.25;
+// ===== 触摸摇杆 =====
+var touchActive = false;
+var touchId = null;
+var touchStartX = 0;
+var touchStartY = 0;
+var touchDX = 0;
+var touchDY = 0;
+var isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+
+var keys = {};
+window.addEventListener("keydown", function(e) {
+    var valid = ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","w","W","s","S","a","A","d","D"];
+    if (valid.includes(e.key)) { e.preventDefault(); keys[e.key] = true; }
+});
+window.addEventListener("keyup", function(e) { keys[e.key] = false; });
+window.addEventListener("blur", function() {
+    var ak = ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","w","W","s","S","a","A","d","D"];
+    for (var i = 0; i < ak.length; i++) keys[ak[i]] = false;
+});
+window.addEventListener("visibilitychange", function() {
+    if (document.hidden) {
+        var ak = ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","w","W","s","S","a","A","d","D"];
+        for (var i = 0; i < ak.length; i++) keys[ak[i]] = false;
+    }
+});
+// 触摸事件
+canvas.addEventListener('touchstart', function(e) {
+    if (state !== STATE.PLAYING) return;
+    e.preventDefault();
+    if (!touchActive) {
+        var t = e.changedTouches[0];
+        touchActive = true;
+        touchId = t.identifier;
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+        touchDX = 0;
+        touchDY = 0;
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', function(e) {
+    if (state !== STATE.PLAYING || !touchActive) return;
+    e.preventDefault();
+    for (var i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchId) {
+            var t = e.changedTouches[i];
+            touchDX = t.clientX - touchStartX;
+            touchDY = t.clientY - touchStartY;
+            break;
+        }
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    for (var i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchId) {
+            touchActive = false;
+            touchId = null;
+            touchDX = 0;
+            touchDY = 0;
+            break;
+        }
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchcancel', function(e) {
+    touchActive = false;
+    touchId = null;
+    touchDX = 0;
+    touchDY = 0;
+});
+
+
+function rand(min, max) { return Math.random() * (max - min) + min; }
+function randInt(min, max) { return Math.floor(rand(min, max)); }
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function overlap(a, b) { return dist(a, b) < a.r + b.r; }
+
+var COLORS = ["#FF6B6B","#4ECDC4","#45B7D1","#96CEB4","#FFEAA7","#DDA0DD","#98D8C8","#F7DC6F","#BB8FCE","#85C1E9","#F8C471","#82E0AA","#F1948A","#AED6F1","#E59866"];
+function randomColor() { return COLORS[randInt(0, COLORS.length)]; }
+
+function calcSpeed(ball) {
+    return Math.max(0.6, ball.baseSpeed * Math.pow(18 / ball.r, 0.45));
+}
+
+class Player {
+    constructor(name, x, y, color) {
+        this.name = name;
+        this.x = x;
+        this.y = y;
+        this.r = 15;
+        this.color = color;
+        this.baseSpeed = playerSpeed;
+        this.alive = true;
+        this.eaten = 0;
+    }
+    get currentSpeed() { return calcSpeed(this); }
+}
+
+class AI extends Player {
+    constructor(name, x, y, color) {
+        super(name, x, y, color);
+        this.baseSpeed = playerSpeed;
+        this.targetX = x;
+        this.targetY = y;
+        this.wanderTimer = 0;
+    }
+    update() {
+        if (!this.alive) return;
+        this.wanderTimer--;
+        if (this.wanderTimer <= 0) {
+            this.wanderTimer = randInt(40, 100);
+            this.targetX = rand(this.r, WORLD_W - this.r);
+            this.targetY = rand(this.r, WORLD_H - this.r);
+        }
+        var threats = [];
+        if (player.alive && player.r > this.r * 1.1) threats.push(player);
+        for (var i = 0; i < ais.length; i++) {
+            if (ais[i] !== this && ais[i].alive && ais[i].r > this.r * 1.1) threats.push(ais[i]);
+        }
+        var flee = null;
+        if (threats.length > 0) {
+            threats.sort(function(a, b) { return dist(this, a) - dist(this, b); }.bind(this));
+            if (dist(this, threats[0]) < 300) flee = threats[0];
+        }
+        var prey = [];
+        for (var i = 0; i < foods.length; i++) {
+            if (dist(this, foods[i]) < 200) prey.push(foods[i]);
+        }
+        if (player.alive && player.r < this.r * 0.9 && dist(this, player) < 250) prey.push(player);
+        for (var i = 0; i < ais.length; i++) {
+            if (ais[i] !== this && ais[i].alive && ais[i].r < this.r * 0.9 && dist(this, ais[i]) < 250) prey.push(ais[i]);
+        }
+        var chase = null;
+        if (prey.length > 0) {
+            prey.sort(function(a, b) { return dist(this, a) - dist(this, b); }.bind(this));
+            chase = prey[0];
+        }
+        var tx, ty;
+        if (flee) {
+            var dx = this.x - flee.x;
+            var dy = this.y - flee.y;
+            var d = Math.hypot(dx, dy) || 1;
+            tx = this.x + (dx / d) * 400;
+            ty = this.y + (dy / d) * 400;
+        } else if (chase) {
+            tx = chase.x;
+            ty = chase.y;
+        } else {
+            tx = this.targetX;
+            ty = this.targetY;
+        }
+        var dx = tx - this.x;
+        var dy = ty - this.y;
+        var d = Math.hypot(dx, dy) || 1;
+        var spd = calcSpeed(this);
+        this.x += (dx / d) * spd;
+        this.y += (dy / d) * spd;
+        this.x = Math.max(this.r, Math.min(WORLD_W - this.r, this.x));
+        this.y = Math.max(this.r, Math.min(WORLD_H - this.r, this.y));
+    }
+}
+
+function spawnFood() {
+    return { x: rand(FOOD_RADIUS, WORLD_W - FOOD_RADIUS), y: rand(FOOD_RADIUS, WORLD_H - FOOD_RADIUS), r: FOOD_RADIUS, color: randomColor() };
+}
+
+function fillFoods() {
+    foods = [];
+    for (var i = 0; i < 200; i++) foods.push(spawnFood());
+}
+
+function resetGame() {
+    player = new Player("我", WORLD_W / 2, WORLD_H / 2, "#FF4757");
+    velX = 0;
+    velY = 0;
+    zoom = 1.0;
+    ais = [];
+    var names = ["小蓝","小红","小绿","小橙","小紫","大白","小黑","小黄","小粉","小灰","小青","小棕","小银","小金","小桃","小雪","小星","小月","小阳","小云"];
+    for (var i = 0; i < AI_COUNT; i++) {
+        var x, y;
+        do {
+            x = rand(300, WORLD_W - 300);
+            y = rand(300, WORLD_H - 300);
+        } while (dist({x: x, y: y}, player) < 400);
+        var ai = new AI(names[i % names.length], x, y, randomColor());
+        ai.r = randInt(12, 22);
+        ais.push(ai);
+    }
+    fillFoods();
+    startTime = performance.now();
+}
+
+var lastTime = performance.now();
+
+function update() {
+    var now = performance.now();
+    var dt = Math.min((now - lastTime) / 1000, 0.1);
+    lastTime = now;
+
+    if (state !== STATE.PLAYING) return;
+
+    if (player.alive) {
+        var tvx = 0, tvy = 0;
+        if (keys["ArrowUp"] || keys["w"] || keys["W"]) tvy -= 1;
+        if (keys["ArrowDown"] || keys["s"] || keys["S"]) tvy += 1;
+        if (keys["ArrowLeft"] || keys["a"] || keys["A"]) tvx -= 1;
+        if (keys["ArrowRight"] || keys["d"] || keys["D"]) tvx += 1;
+        // 触摸摇杆输入
+        if (touchActive) {
+            var td = Math.hypot(touchDX, touchDY);
+            if (td > 8) {
+                var factor = Math.min(td / 80, 1.0);
+                tvx += (touchDX / td) * factor;
+                tvy += (touchDY / td) * factor;
+            }
+        }
+
+        var inputLen = Math.hypot(tvx, tvy);
+        var maxSpeed = calcSpeed(player);
+        if (inputLen > 0) {
+            tvx /= inputLen;
+            tvy /= inputLen;
+            velX += (tvx * maxSpeed - velX) * ACCEL;
+            velY += (tvy * maxSpeed - velY) * ACCEL;
+        } else {
+            velX *= FRICTION;
+            velY *= FRICTION;
+            if (Math.abs(velX) < 0.05) velX = 0;
+            if (Math.abs(velY) < 0.05) velY = 0;
+        }
+        var cap = calcSpeed(player) * 1.2;
+        var vm = Math.hypot(velX, velY);
+        if (vm > cap) {
+            velX = velX / vm * cap;
+            velY = velY / vm * cap;
+        }
+
+        player.x += velX;
+        player.y += velY;
+        player.x = Math.max(player.r, Math.min(WORLD_W - player.r, player.x));
+        player.y = Math.max(player.r, Math.min(WORLD_H - player.r, player.y));
+    }
+
+    for (var i = 0; i < ais.length; i++) ais[i].update();
+
+    var allBalls = [player];
+    for (var i = 0; i < ais.length; i++) allBalls.push(ais[i]);
+    for (var i = foods.length - 1; i >= 0; i--) {
+        for (var j = 0; j < allBalls.length; j++) {
+            if (!allBalls[j].alive) continue;
+            if (overlap(allBalls[j], foods[i])) {
+                allBalls[j].r = Math.sqrt(allBalls[j].r * allBalls[j].r + 20);
+                allBalls[j].eaten++;
+                foods.splice(i, 1);
+                break;
+            }
+        }
+    }
+    for (var i = 0; i < allBalls.length; i++) {
+        for (var j = i + 1; j < allBalls.length; j++) {
+            var a = allBalls[i];
+            var b = allBalls[j];
+            if (!a.alive || !b.alive) continue;
+            if (overlap(a, b)) {
+                if (a.r > b.r * 1.05) {
+                    a.r += Math.floor(b.r * 0.5);
+                    b.alive = false;
+                } else if (b.r > a.r * 1.05) {
+                    b.r += Math.floor(a.r * 0.5);
+                    a.alive = false;
+                }
+            }
+        }
+    }
+
+    // 根据屏幕尺寸调整zoom，保证小屏也能看到足够大的视野
+    var refDim = Math.min(canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+    var zoomScale = refDim / 600;
+    var targetZoom = Math.pow(player.r / 15, -0.17) * zoomScale;
+    var zs = 0.04 + (1 - targetZoom) * 0.02;
+    zoom += (targetZoom - zoom) * zs;
+
+    if (!player.alive) {
+        state = STATE.LOST;
+    } else if (player.r >= targetSize) {
+        state = STATE.WON;
+        gameTime = ((performance.now() - startTime) / 1000).toFixed(1);
+    }
+    updateHUD();
+}
+
+function updateHUD() {
+    var cur = Math.floor(player.r);
+    var pct = Math.min(100, Math.floor(cur / targetSize * 100));
+    document.getElementById("sizeText").textContent = cur + " / " + targetSize;
+    document.getElementById("progressFill").style.width = pct + "%";
+    document.getElementById("progressFill").textContent = pct + "%";
+    document.getElementById("rankText").textContent = getRank();
+
+    var ve = document.getElementById("velText");
+    if (ve) {
+        var spd = Math.hypot(velX, velY).toFixed(1);
+        var dx = velX.toFixed(1);
+        var dy = velY.toFixed(1);
+        var dir = "";
+        if (Math.abs(velY) > 0.3) dir += (velY < 0) ? "\u2191" : "\u2193";
+        if (Math.abs(velX) > 0.3) dir += (velX < 0) ? "\u2190" : "\u2192";
+        ve.textContent = "速度 " + spd + " " + dir + " (" + dx + ", " + dy + ")";
+    }
+}
+
+function getRank() {
+    var all = [player];
+    for (var i = 0; i < ais.length; i++) all.push(ais[i]);
+    all = all.filter(function(b) { return b.alive; });
+    all.sort(function(a, b) { return b.r - a.r; });
+    return "第 " + (all.indexOf(player) + 1) + " / " + all.length + " 名";
+}
+
+function draw() {
+    ctx.save();
+    if (!player) { ctx.restore(); return; }
+
+    var dpr = window.devicePixelRatio || 1;
+    var logicalW = canvas.width / dpr;
+    var logicalH = canvas.height / dpr;
+    ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, logicalW / 2 * dpr, logicalH / 2 * dpr);
+    ctx.translate(-player.x, -player.y);
+
+    ctx.fillStyle = "#dee2e6";
+    ctx.fillRect(-WORLD_W, -WORLD_H, WORLD_W * 3, WORLD_H * 3);
+
+    var gs = 50;
+    var dpr2 = window.devicePixelRatio || 1;
+    var logicalW2 = canvas.width / dpr2;
+    var logicalH2 = canvas.height / dpr2;
+    var left = player.x - logicalW2 / 2 / zoom;
+    var right = player.x + logicalW2 / 2 / zoom;
+    var top = player.y - logicalH2 / 2 / zoom;
+    var bot = player.y + logicalH2 / 2 / zoom;
+    var gx0 = Math.ceil(left / gs) * gs;
+    var gy0 = Math.ceil(top / gs) * gs;
+    ctx.strokeStyle = "#ced4da";
+    ctx.lineWidth = 1;
+    for (var x = gx0; x <= right; x += gs) {
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, Math.max(bot, WORLD_H));
+        ctx.stroke();
+    }
+    for (var y = gy0; y <= bot; y += gs) {
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(Math.max(right, WORLD_W), y);
+        ctx.stroke();
+    }
+
+    ctx.strokeStyle = "#adb5bd";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, WORLD_W, WORLD_H);
+
+    for (var i = 0; i < foods.length; i++) {
+        ctx.beginPath();
+        ctx.arc(foods[i].x, foods[i].y, foods[i].r, 0, Math.PI * 2);
+        ctx.fillStyle = foods[i].color;
+        ctx.fill();
+    }
+
+    for (var i = 0; i < ais.length; i++) {
+        if (ais[i].alive) drawBall(ais[i]);
+    }
+
+    if (player && player.alive) drawBall(player);
+
+    ctx.restore();
+
+    function drawBall(b) {
+        ctx.beginPath();
+        ctx.arc(b.x + 2, b.y + 3, b.r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.15)";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fillStyle = b.color;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(b.x - b.r * 0.25, b.y - b.r * 0.25, b.r * 0.25, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.3)";
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold " + Math.max(10, b.r * 0.6) + "px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(b.name, b.x, b.y - 2);
+        ctx.font = Math.max(8, b.r * 0.4) + "px Arial";
+        ctx.fillText(Math.floor(b.r), b.x, b.y + b.r * 0.3 + 6);
+    }
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+function updateSpeedLabel() {
+    var v = parseFloat(document.getElementById("speedSlider").value);
+    document.getElementById("speedLabel").textContent = v.toFixed(1);
+    playerSpeed = v;
+}
+
+function updateAiLabel() {
+    var v = document.getElementById("aiSlider").value;
+    document.getElementById("aiLabel").textContent = v;
+}
+
+function startGame(size) {
+    targetSize = size;
+    playerSpeed = parseFloat(document.getElementById("speedSlider").value);
+    AI_COUNT = parseInt(document.getElementById("aiSlider").value);
+    resetGame();
+    state = STATE.PLAYING;
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("hud").style.display = "flex";
+    document.getElementById("result").style.display = "none";
+    canvas.style.display = "block";
+    resizeCanvas();
+    lastTime = performance.now();
+    // 移动端强制横屏
+    if (isMobile && screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(function() {});
+    }
+}
+
+function showResult() {
+    document.getElementById("hud").style.display = "none";
+    document.getElementById("result").style.display = "flex";
+    document.getElementById("resultTitle").textContent = state === STATE.WON ? "\uD83C\uDF89 恭喜通关！" : "\uD83D\uDC80 你被吃掉了！";
+    document.getElementById("resultInfo").innerHTML = "最终大小: <b>" + Math.floor(player.r) + "</b> | " + getRank() + "<br>用时: <b>" + gameTime + "</b> 秒";
+}
+
+function restartGame() {
+    document.getElementById("menu").style.display = "flex";
+    document.getElementById("result").style.display = "none";
+    canvas.style.display = "none";
+    state = STATE.MENU;
+}
+
+function resizeCanvas() {
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = (window.innerWidth || 800) * dpr;
+    canvas.height = (window.innerHeight || 600) * dpr;
+    canvas.style.width = (window.innerWidth || 800) + 'px';
+    canvas.style.height = (window.innerHeight || 600) + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener("resize", resizeCanvas);
+
+setInterval(function() {
+    if (state === STATE.WON || state === STATE.LOST) showResult();
+}, 100);
+
+resizeCanvas();
+gameLoop();
+
+setInterval(function() {
+    if (state === STATE.PLAYING) {
+        var count = randInt(30, 81);
+        for (var i = 0; i < count; i++) foods.push(spawnFood());
+    }
+}, 1000);
+
+
+
+
+
+
+
+// ========== 记忆设置 ==========
+function saveSettings() {
+    var s = {
+        speed: document.getElementById("speedSlider").value,
+        ai: document.getElementById("aiSlider").value,
+        target: document.getElementById("targetSlider").value
+    };
+    localStorage.setItem("ballgame", JSON.stringify(s));
+}
+function loadSettings() {
+    try {
+        var j = JSON.parse(localStorage.getItem("ballgame"));
+        if (!j) return;
+        document.getElementById("speedSlider").value = j.speed;
+        updateSpeedLabel();
+        document.getElementById("aiSlider").value = j.ai;
+        updateAiLabel();
+        document.getElementById("targetSlider").value = j.target;
+        document.getElementById("targetLabel").textContent = j.target;
+    } catch(e) {}
+}
+// 页面加载时恢复
+loadSettings();
+// 每次调整时保存
+document.getElementById("speedSlider").addEventListener("input", saveSettings);
+document.getElementById("aiSlider").addEventListener("input", saveSettings);
+document.getElementById("targetSlider").addEventListener("input", function() {
+    document.getElementById("targetLabel").textContent = this.value;
+    saveSettings();
+});
+
+
+</script>
+</body>
+</html>
+
+
